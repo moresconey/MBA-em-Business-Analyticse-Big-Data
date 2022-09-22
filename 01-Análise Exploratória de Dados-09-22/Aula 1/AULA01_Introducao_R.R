@@ -267,7 +267,7 @@ tail(csv_file)
 csv_file
 
 # Escreva esse data frame no formato csv no desktop com o nome heart_disease
-write.csv(csv_file, file = "heart_disease")
+write.csv(csv_file, file = "01-Análise Exploratória de Dados-09-22/Aula 1/heart_disease")
 
 #--------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------#

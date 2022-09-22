@@ -143,7 +143,6 @@ b = ['book', 'pen', 'textbook', 'pencil_case']
 c = [True,False,True,False]
 d = [2.5, 8, 10, 7]
 
-import pandas as pd
 df = pd.DataFrame(list(zip(a,b,c,d)))
 
 # b) Acrescente os nomes abaixo às colunas
@@ -259,7 +258,7 @@ df.tail()
 df
 
 # Escreva esse data frame no formato csv no desktop com o nome heart_disease
-df.to_csv("heart_disease.csv", index=False)
+df.to_csv("01-Análise Exploratória de Dados-09-22/Aula 1/heart_disease.csv", index=False)
 
 #--------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------#
