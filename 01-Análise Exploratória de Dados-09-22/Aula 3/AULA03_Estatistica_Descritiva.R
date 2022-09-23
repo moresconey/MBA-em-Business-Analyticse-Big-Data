@@ -95,7 +95,7 @@ plot(df$Sales_wkly, df$Temperature)
 # b) Existe associa??o entre tamanho da loja e vendas semanais?
 cor(df$Sales_wkly, df$Size)
 plot(df$Sales_wkly, df$Size)
-# Sim forte correlação
+# Sim forte correlação positiva, quanto maior a loja maior são as vendas
 
 #--------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------#
