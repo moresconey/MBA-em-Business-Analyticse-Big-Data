@@ -2,14 +2,12 @@
 #--------------------------------------------------------------------------------#
 # MBA EM BUSINESS ANALYTICS E BIG DATA
 # INFERENCIA ESTATISTICA
-# CASE 2 - Manipulando dados no R 
+# CASE 2 - Manipulando dados no Python
 #--------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------#
 
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(lubridate)
+import pandas as pd
+import re # for strings
 
 #--------------------------------------------------------------------------------#
 # PARTE a - Manipula??o de datas com o lubridate
@@ -28,39 +26,44 @@ library(lubridate)
 
 # a) Leia a base de dados. Que formato de dados temos? Quantas linhas e quantas
 # colunas?
-dfTransact = read.csv("01-Análise Exploratória de Dados-09-22/Aula 2/transact.csv")
-str(dfTransact)
+dfTransact = pd.read_csv("01-Análise Exploratória de Dados-09-22/Aula 2/transact.csv")
+dfTransact.dtypes
+print(f'Number of rows/records: {dfTransact.shape[0]}')
+print(f'Number of columns/variables: {dfTransact.shape[1]}')
 
 # b) O conte?do do data frame est? como caracteres. Converta adequadamente o char 
 # em formato de data-tempo
-dfTransact = dfTransact %>% mutate(Invoice = as.Date(Invoice), Due = as.Date(Due), Payment = as.Date(Payment))
-
+for x in dfTransact.columns:
+    dfTransact[x] = pd.to_datetime(dfTransact[x])
 
 # c) Identificando se a fatura foi paga em atraso ou em dia
 #                t0         t1          t2     t3
 # gera??o fatura |----------------------| vencimento fatura
 # CASO 1         |------------------------------| pagamento fatura  EM ATRASO
 # CASO 2         |----------| pagamento fatura                      EM DIA
-dfTransact = dfTransact %>% mutate(status = ifelse(Payment > Due, "EM ATRASO", "EM DIA"))
+valid = dfTransact["Payment"] > dfTransact["Due"]
+dfTransact["status"] = "EM DIA"
+dfTransact.loc[valid, "status"] = "EM ATRASO"
 
 # d) Identificacao do mes, ano, e dia da semana da geracao da fatura
-dfTransact = dfTransact %>% separate(Invoice, sep="-", into = c("year", "month", "day"))
-
-dfTransact = dfTransact %>% mutate(mes = month(Invoice), ano = year(Invoice), diasemana = weekdays(Invoice))
+dfTransact["mes"] = dfTransact["Invoice"].dt.month
+dfTransact["ano"] = dfTransact["Invoice"].dt.year
+dfTransact["diasemana"] = dfTransact["Invoice"].dt.weekday
 
 # e) Quantidade de faturas por Status (em dia e em atraso)
-table(dfTransact["status"])
+dfTransact["status"].value_counts()
 
 # f) Quantidade de faturas por m?s, ano e dia da semana
-dfTransact %>% group_by(mes, ano, diasemana) %>% summarise(Quantidade = n())
+dfTransact[["mes","ano","diasemana"]].value_counts()
 
 # g) Quantidade de faturas em atraso por dia da semana
-dfTransact %>% filter(status == "EM ATRASO") %>% group_by(diasemana) %>% summarise(quantidade = n())
+dfTransact.loc[dfTransact["status"] == "EM ATRASO","diasemana"].value_counts()
 
 # h) Crie um intervalo de tempo entre o vencimento e o pagamento, determine a 
 # dura??o em dias. Filtre apenas as faturas pagas com atraso e veja a m?dia 
 # em dias por ano
-dfTransact %>% filter(status == "EM ATRASO") %>% mutate(day_to_pay = Payment - Due) %>% summarise(media = mean(day_to_pay))
+dfTemp = dfTransact.loc[dfTransact["status"] == "EM ATRASO"]
+(dfTemp["Payment"] - dfTemp["Due"]).mean()
 
 
 #--------------------------------------------------------------------------------#
@@ -109,37 +112,39 @@ dfTransact %>% filter(status == "EM ATRASO") %>% mutate(day_to_pay = Payment - D
 #--------------------------------------------------------------------------------#
 
 # a) Leia os dataframes em quest?o
-dfDateFeatures = read.csv("01-Análise Exploratória de Dados-09-22/Aula 2/date_features.csv")
-dfStoresInfo = read.csv("01-Análise Exploratória de Dados-09-22/Aula 2/stores_info.csv")
-dfStoresSales = read.csv("01-Análise Exploratória de Dados-09-22/Aula 2/stores_sales.csv")
+dfDateFeatures = pd.read_csv("01-Análise Exploratória de Dados-09-22/Aula 2/date_features.csv")
+dfStoresInfo = pd.read_csv("01-Análise Exploratória de Dados-09-22/Aula 2/stores_info.csv")
+dfStoresSales = pd.read_csv("01-Análise Exploratória de Dados-09-22/Aula 2/stores_sales.csv")
 
 # b) Observe a estrutura dos dataframes, formatos das vari?veis, range das infor-
 # ma??es e ocorr?ncia de valores omissos (missing values)
 # Dica: use o summary e str
-str(dfDateFeatures)
-summary(dfDateFeatures)
+dfDateFeatures.shape
+dfDateFeatures.describe()
 
-str(dfStoresInfo)
-summary(dfStoresInfo)
+dfStoresInfo.shape
+dfStoresInfo.describe()
 
-str(dfStoresSales)
-summary(dfStoresSales)
+dfStoresSales.shape
+dfStoresSales.describe()
 
 # existem informa??es missing em algumas vari?veis em maior ou menor propor??o
-sum(is.na(dfStoresSales))
-sum(is.na(dfStoresInfo))
-sum(is.na(dfDateFeatures))
+dfStoresSales.isna().sum()
+dfStoresInfo.isna().sum()
+dfDateFeatures.isna().sum()
 
 # dataframe aparentemente ok
 
+
 # existem valores negativos de vendas
 
+
 # c) Remova a vari?vel MarkDown1 do dataframe 'date_info'
-dfDateFeatures$MarkDown1 = NULL
+del dfDateFeatures["MarkDown1"]
 
 # d) Fa?a a convers?o da temperatura para graus Celsius, fa?a o arredondamento na
 # primeira casa decimal
-dfDateFeatures["TemperatureCelsius"] = round((dfDateFeatures$Temperature - 32) * (5/9),1)
+dfDateFeatures["TemperatureCelsius"] = round((dfDateFeatures["Temperature"] - 32) * (5/9),1)
 
 # e) Ap?s uma pesquisa, foi determinado o significado do tipo anonimizado de 
 # loja (Type) no dataframe 'stores_info': 
@@ -147,48 +152,48 @@ dfDateFeatures["TemperatureCelsius"] = round((dfDateFeatures$Temperature - 32) *
 # A - Supercenter
 # B - Discount Store
 # C - Neighborhood Market
-new_values = list("A" = "Supercenter", "B" = "Discount Store","C" =  "Neighborhood Market")
+new_values = {"A" : "Supercenter", "B" : "Discount Store","C" : "Neighborhood Market"}
 
 # Fa?a a substitui??o na pr?pria vari?vel original
-dfStoresInfo = dfStoresInfo %>% mutate(Type = new_values[Type])
+dfStoresInfo["Type"].replace(new_values, inplace=True)
 
 # f) Fa?a a convers?o da ?rea da loja de p?s quadrados para metros quadrados, 
 # deixe sem casas decimais
-dfStoresInfo = dfStoresInfo %>% mutate(metros_quadrado = round(Size * 0.3048,0))
+dfStoresInfo["metros_quadrado"] = round(dfStoresInfo["Size"] * 0.3048,0)
 
 # g) Remova os valores negativos de vendas semanais Weekly_Sales do dataframe
 # 'sales_info'
-dfStoresSales = dfStoresSales %>% filter(Weekly_Sales >= 0)
+dfStoresSales = dfStoresSales[dfStoresSales["Weekly_Sales"] > 0]
 
 # h) Agregue as informa??es de vendas no n?vel loja, ou seja, some por todos 
 # os departamentos por loja e data. Atribua o conte?do no dataframe 'sales_info2'
-sales_info2 = dfStoresSales %>% group_by(Store, Date) %>% summarise(vendas_semanais = sum(Weekly_Sales))
+sales_info2 = dfStoresSales.pivot_table(index=["Store", "Date"], aggfunc=sum, values="Weekly_Sales").reset_index()
 
 # i) Traga as informa??es do dataframe 'date_info' no dataframe 'sales_info2'.
 # Armazene o conte?do no dataframe 'df' e renomeie a coluna de vendas semanais
 # para Sales_wkly
 
 # as keys dos dataframes s?o: Store e Date
-sales_info2 = sales_info2 %>% left_join(dfStoresSales, by=c("Store", "Date"))
+sales_info2 = sales_info2.merge(dfStoresSales, how = "left", on = ("Store", "Date"))
 
 # j) Traga as informa??es do dataframe 'stores_info' no dataframe criado no 
 # item anterior
 
 # as keys dos dataframes s?o: Store
-sales_info2 = sales_info2 %>% left_join(dfStoresInfo, by = "Store")
+sales_info2 = sales_info2.merge(dfStoresInfo, how = "left", on = "Store")
 
 # k) Extraia o dia da semana das datas e armazene na coluna 'Weekday'. Use
 # de forma abreviada e em ingl?s
 # COnvertendo a coluna Date de string -> date
-Sys.setlocale("LC_TIME", "C")
-sales_info2 = sales_info2 %>% mutate(Date = as.Date(Date)) %>% mutate(weekday = weekdays(Date, abbreviate = TRUE))
+# sales_info2["Date"] = pd.to_datetime(sales_info2["Date"])
+sales_info2["weekday"] = sales_info2["Date"].dt.strftime("%a")
 
 # l) Extraia o m?s da data e armazene na coluna 'Month'. Use de forma abrevia-
 # da e em ingl?s
-sales_info2 = sales_info2 %>% mutate(Month = month(Date, label = TRUE,abbr = TRUE))
+sales_info2["month"] = sales_info2["Date"].dt.strftime("%b")
 
 # m) Salve o dataframe 'df' como um arquivo .csv. Nomeie como wallmart_sales
-write.csv(df, "01-Análise Exploratória de Dados-09-22/Aula 2/wallmart_sales.csv")
+sales_info2.to_csv("01-Análise Exploratória de Dados-09-22/Aula 2/wallmart_sales.csv", index=False)
 
 #--------------------------------------------------------------------------------#
 #--------------------------------------------------------------------------------#
